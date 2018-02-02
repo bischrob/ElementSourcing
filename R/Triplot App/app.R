@@ -1,0 +1,95 @@
+# This script creates a shiny app for showing triplots for obsidian sourcing.
+# Created: 12.21.17
+# Robert J. Bischoff
+
+#############################################################################################
+# Create a variable storing packages used, installs the package if missing, and loads packages.
+my.packages <- c("plotly", "shiny")
+usePackage <- function(p) 
+{
+  if (!is.element(p, installed.packages()[,1]))
+    install.packages(p, dep = TRUE)
+  require(p, character.only = TRUE)
+}
+lapply(my.packages, usePackage)
+
+#############################################################################################
+# User interface ----
+ui <- fluidPage(
+  titlePanel("Obsidian Sourcing Interactive Plots"), 
+      sidebarLayout(
+        sidebarPanel(
+          radioButtons("source1", label = "Data Source",
+                       choices = list("All Data" = 1,
+                                      "Assigned" = 2,
+                                      "Unassigned" = 3),
+                       selected = 1, inline = F),
+          selectInput("label1", label = h5("Legend Label"),
+                      choices = list( "Original" = "Source",
+                                      "Discriminant" = "Discriminant",
+                                      "Mahalanobis" = "Mahalanobis"),
+                      selected = 12),
+          selectInput("elem1", label = h5("Element 1"), 
+                      choices = list("Rb" = 7,
+                                     "Sr" = 8,
+                                     "Y" = 9,
+                                     "Zr" = 10,
+                                     "Nb" = 11), 
+                      selected = 7),
+               selectInput("elem2", label = h5("Element 2"), 
+                           choices = list("Rb" = 7,
+                                          "Sr" = 8,
+                                          "Y" = 9,
+                                          "Zr" = 10,
+                                          "Nb" = 11), 
+                           selected = 8),
+          selectInput("elem3", label = h5("Element 3"), 
+                      choices = list("Rb" = 7,
+                                     "Sr" = 8,
+                                     "Y" = 9,
+                                     "Zr" = 10,
+                                     "Nb" = 11), 
+                      selected = 9)
+      ),
+        mainPanel(
+          h3(textOutput("caption")),
+          hr(),
+          plotlyOutput("plotly1", height = "800px", width = "950px")
+        )
+    )
+)
+
+# Server logic ----
+server <- function(input, output) {
+  
+  output$caption <- renderText("Triplot/Ternary")
+  
+  output$plotly1 <- renderPlotly({
+    
+    # Assign correct data frame for radio button selected    
+    if(input$source1 == 1) {plotDF <- AllData}
+    if(input$source1 == 2) {plotDF <- rbind.data.frame(Assigned, AllData[sources,])}
+    if(input$source1 == 3) {plotDF <- rbind.data.frame(Unassigned, AllData[sources,])}
+
+    plot_ly(data = plotDF,
+                 a = plotDF[,as.numeric(input$elem1)],
+                 b = plotDF[,as.numeric(input$elem2)],
+                 c = plotDF[,as.numeric(input$elem3)],
+                 color = ~get(input$label1),
+                 
+                 type = 'scatterternary',
+                 symbol = ~Type,
+                 mode = 'markers',
+                 text = ~paste("ANID: ",
+                               ANID, '<br>Source:',
+                               Source, '<br>Closest Source:',
+                               Mahalanobis)) %>%
+      layout(ternary = list(aaxis = list(title = names(plotDF)[as.numeric(input$elem1)]),
+                            baxis = list(title = names(plotDF)[as.numeric(input$elem2)]),
+                            caxis = list(title = names(plotDF)[as.numeric(input$elem3)]),
+                            margin = list(t = 50, l = 200)))
+  })
+}
+
+# Run app ----
+shinyApp(ui, server)
