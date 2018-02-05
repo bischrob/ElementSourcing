@@ -2,16 +2,16 @@
 # Created: 12.21.17
 # Robert J. Bischoff
 
-#############################################################################################
-# Create a variable storing packages used, installs the package if missing, and loads packages.
-my.packages <- c("plotly", "shiny")
-usePackage <- function(p) 
-{
-  if (!is.element(p, installed.packages()[,1]))
-    install.packages(p, dep = TRUE)
-  require(p, character.only = TRUE)
-}
-lapply(my.packages, usePackage)
+# #############################################################################################
+# # Create a variable storing packages used, installs the package if missing, and loads packages.
+# my.packages <- c("plotly", "shiny")
+# usePackage <- function(p) 
+# {
+#   if (!is.element(p, installed.packages()[,1]))
+#     install.packages(p, dep = TRUE)
+#   require(p, character.only = TRUE)
+# }
+# lapply(my.packages, usePackage)
 
 #############################################################################################
 # User interface ----

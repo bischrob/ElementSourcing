@@ -7,79 +7,39 @@
 #' Robert J. Bischoff
 
 ################################################################################
-# Variables to update
-
-files <- choose.files(caption = "Select all files to use in sourcing")
-file1 <- file.choose() # note look into using choose.file for multiple selections
-file2 <- file.choose()
-
-myGroup <- "Source"
-myGroup2 <- "Type"
-myProb <- .9 # Probability limit to accept sourcing
-whichData <- 1 # 1, 2 or 3 - designates the use of all data in plots, or assigned or unassigned
-elem1 <- 8
-elem2 <- 9
-elem3 <- 10
-myResults <- "N"
-
-################################################################################
 # Create a variable storing packages used, installs the package if missing, and loads packages.
-my.packages <- c("xlsx", "ggplot2","MASS", "dplyr", "rio")
+my.packages <- c("xlsx", "ggplot2","MASS", "dplyr", "rio","svDialogs", "plotly", "shiny")
 usePackage <- function(p) 
 {
   if (!is.element(p, installed.packages()[,1]))
     install.packages(p, dep = TRUE)
-  require(p, character.only = TRUE)
+  lapply(p, function(x) suppressMessages(require(x, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))
 }
 lapply(my.packages, usePackage)
 
 # source functions
-source("R/multipleScatterplots.R")
-source("R/ElementSourcingFunction.R")
+source("R/scatterPlots.R")
+source("R/elemSource.R")
+source("R/selectData.R")
+source("R/AllBiplotsFunction.R")
 
 ################################################################################
-mySources <- import(file1)
-myData <- import(file2)
+# load data
+# df <- selectData()
+# saveRDS(df,"Data/testdata.Rds")
+df <- readRDS('Data/testdata.Rds')
 
-# Change column names
-names(mySources)[1:13] <- c("ANID","Mn", "Fe", "Zn", "Ga", "Th", "Rb", "Sr", "Y", "Zr", "Nb", "Source", "Type")
-names(myData)[1:13] <- c("ANID","Mn", "Fe", "Zn", "Ga", "Th", "Rb", "Sr", "Y", "Zr", "Nb", "Source", "Type")
+# Create key for rows that are either artifacts or sources
+artifacts <- which(df$Type == "Artifact")
+sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
 
-# Choose which sources to keep
-sourceList <- unique(mySources$Source) # unique sources
-dataList <- unique(myData$Source) # groups from data to be source
-
-# Create function to print lists
-printList <- function(printList){
-  stopifnot(!missing(printList))
-  sourceListPrint <- paste0(1:length(printList), ": ", printList)
-  print(sourceListPrint)
-}
-
-# Create function to take user input for subset
-readinteger <- function(xlist){ 
-  stopifnot(!missing(xlist))
-    n <- readline(prompt="Enter an integer for each selection to include separated by a comma (1,2,3...): ")
-  n <- as.numeric(unlist(strsplit(n,"\\,")) )
-  grp <- xlist[n]
-  return(grp)
-}
-
-printList(sourceList)
-grp1 <- readinteger(sourceList) 
-printList(dataList)
-grp2 <- readinteger(dataList) 
-
-# Subset data
-myCData <- bind_rows(mySources[which(mySources[,myGroup] %in% grp1),],
-                      myData[which(myData[,myGroup] %in% grp2),] )  
-rm(myData,mySources)
-plotDF <- elemSource(myCData)
+# Run sourcing function
+df <- elemSource(df,saveResults = F,prob = 1)
 
 ################################################################################
 # plot results
-allBiplots(plotDF)
+ allBiplots(df)
 # allTriplots(plotDF)
 # Display scatterplots
-# windows(12,12); sp <- scatterPlots(plotDF, as.character(myGroup))
+# windows(12,12); sp <- scatterPlots(df)
 

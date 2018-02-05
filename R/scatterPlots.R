@@ -11,15 +11,19 @@
 
 ################################################################################
 # Function
-scatterPlots <- function(df = "dataframe", groupName = NULL){ 
+scatterPlots <- function(df = "dataframe", groupName = NULL, mColors = NULL){ 
   if(!is.data.frame(df)){
     stop("Please include a dataframe object.")  
   }
-  if (missing(groupName)) {
+  if (missing("groupName")) {
     groupName <- "Source"
   } 
+  if (missing("mColors")) {
+    myColors <- readRDS("Data/Colors.Rds")
+    mColors <-  myColors$Hex[1:length(unique(df$Source))]
+  } 
   # load packages
-  myPackages <- c("ggplot2", "gridExtra")
+  myPackages <- c("ggplot2", "grid","gridExtra")
   usePackage <- function(p) 
   {
     if (!is.element(p, installed.packages()[,1]))
@@ -30,14 +34,38 @@ scatterPlots <- function(df = "dataframe", groupName = NULL){
   
   # get all plots into a list
   options(warn = -1) # turn off warnings temporarily
-  pNames <- ""
-    for(i in 1:10){
-      g <- ggplot(df, aes_string(x = names(df[7]), y = names(df[8]), color = groupName)) +
-        geom_point() + theme_bw() + theme(legend.title=element_blank())
-      assign(paste0("p",i), g)
-      pNames <- c(pNames,paste0("p",i))
+  for(i in 7:11){
+    for(j in 7:11){
+      if(!identical(i,j)) {
+        ratio.display <- 4/3
+        ratio.values <- (max(df[,i])-min(df[,i]))/
+          (max(df[sources,j])-min(df[sources,j]))
+        p <- ggplot() +
+          geom_point(data = df[artifacts,], aes(x = df[artifacts,i],
+                                                y = df[artifacts,j],
+                                                color = df$Source[artifacts])) +
+          coord_fixed(ratio.values/ratio.display) +
+          xlab(names(df)[i]) +
+          ylab(names(df)[j]) +
+          theme_minimal() +
+          theme(legend.title=element_blank()) +
+          scale_color_manual(values = mColors) + # used for manual colors
+          stat_ellipse(data = df[sources,], aes(x = df[sources,i],
+                                                y = df[sources,j],
+                                                color = df$Source[sources]),
+                       type = "norm",
+                       level = .9,
+                       lwd = 1) # this ellipse is based off the multivariate normal distribution
+      assign(paste0("p",i,j),p)
+      if(exists("pNames")) {
+        pNames <- c(pNames,paste0("p",i,j))
+      } else {
+        pNames <- paste0("p",i,j)
+      }
+      }
     }
-    pNames <- pNames[2:11]
+  }
+  options(warn = 0)
     mPlots <- lapply(pNames,FUN = function(x) get(x))
 
   
