@@ -6,27 +6,43 @@
 #' Other columns after these are allowed.
 #' Author: Robert J. Bischoff
 #' Date Created: 2.2.2018
-#' Last Updated: 2.2.2018
+#' Last Updated: 2.5.2018
 #' Contact: bischrob@gmail.com
 
 ################################################################################
 # Function
-scatterPlots <- function(x = "data frame", groupn = NULL){ 
-  if (is.null(groupn)) groupn <- "Source"
-  my.packages <- c("ggplot2", "GGally", "grid","gridExtra")
+scatterPlots <- function(df = "dataframe", groupName = NULL){ 
+  if(!is.data.frame(df)){
+    stop("Please include a dataframe object.")  
+  }
+  if (missing(groupName)) {
+    groupName <- "Source"
+  } 
+  # load packages
+  myPackages <- c("ggplot2", "gridExtra")
   usePackage <- function(p) 
   {
     if (!is.element(p, installed.packages()[,1]))
       install.packages(p, dep = TRUE)
-    require(p, character.only = TRUE)
+    lapply(p, function(x) suppressMessages(require(x, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))
   }
-  lapply(my.packages, usePackage)
+  lapply(myPackages, usePackage)
   
-  pm <- ggpairs(x, ggplot2::aes_(color = x[,groupn]), columns = 7:11)
+  # get all plots into a list
+  options(warn = -1) # turn off warnings temporarily
+  pNames <- ""
+    for(i in 1:10){
+      g <- ggplot(df, aes_string(x = names(df[7]), y = names(df[8]), color = groupName)) +
+        geom_point() + theme_bw() + theme(legend.title=element_blank())
+      assign(paste0("p",i), g)
+      pNames <- c(pNames,paste0("p",i))
+    }
+    pNames <- pNames[2:11]
+    mPlots <- lapply(pNames,FUN = function(x) get(x))
 
-    # create a function to create one shared plot
-  grid_arrange_shared_legend <- function(...) {
-    plots <- list(...)
+  
+  # create a function to create one shared plot
+  grid_arrange_shared_legend <- function(plots) {
     g <- ggplotGrob(plots[[1]] + theme(legend.position="bottom"))$grobs 
     legend <- g[[which(sapply(g, function(x) x$name) == "guide-box")]]
     lheight <- sum(legend$height)
@@ -37,19 +53,7 @@ scatterPlots <- function(x = "data frame", groupn = NULL){
       ncol = 1,
       heights = unit.c(unit(1, "npc") - lheight, lheight))
   }
-  p1 <- getPlot(pm, 2, 1)
-  p2 <- getPlot(pm, 3, 1)
-  p3 <- getPlot(pm, 3, 2)
-  p4 <- getPlot(pm, 4, 1)
-  p5 <- getPlot(pm, 4, 2)
-  p6 <- getPlot(pm, 4, 3)
-  p7 <- getPlot(pm, 5, 1)
-  p8 <- getPlot(pm, 5, 2)
-  p9 <- getPlot(pm, 5, 3)
-  p10<- getPlot(pm, 5, 4)
-  g <- grid_arrange_shared_legend(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10)
+  g <- grid_arrange_shared_legend(mPlots)
 
     return(g)
 }
-
-
