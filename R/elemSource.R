@@ -2,61 +2,54 @@
 #' obsidian sourcing.
 
 #############################################################################################
-elemSource <- function(df,whichData = 1){
+elemSource <- function(df, saveResults = T, prob = .9){
 stopifnot(is.data.frame(df))
 
 # log and clean values
-oLog <- df[,2:11]
-oLog[get("oLog") < 0] <- 0
-oLog <- log(oLog)
-oLog <- apply(oLog,2, function(x) replace(x, is.infinite(x),0)) # Replace infinite values
+# all values below zero or infinite will be removed 
+notlogged <- df[,2:11]
+mLog <- df[,2:11]
+mLog[get("mLog") < 0] <- 0
+mLog <- log(mLog)
+mLog <- apply(mLog,2, function(x) replace(x, is.infinite(x),0)) # Replace infinite values
 
-df[,2:11] <- oLog
-
-# List unique identifiers and split artifacts and sources
-oSources <<- as.factor(df [,myGroup])
-oTypes <<- as.factor(df[,myGroup2])
-artifacts <<- which(df$Type == "Artifact")
-sources <<- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
+df[,2:11] <- mLog
 
 #############################################################################################
 # Discriminant Analysis
-
 # Run analysis on sources
-fitLDA <- lda(oSources[sources] ~ ., data = df[sources,7:11],
-           prior = rep(1,nlevels(oSources[sources]))/nlevels(oSources[sources]))
+fitLDA <- lda(df$Source[sources] ~ ., data = df[sources,7:11],
+           prior = rep(1,length(unique(df$Source[sources])))/
+                         length(unique(df$Source[sources])))
 
 # Assess the accuracy of the prediction
 testLDA <- predict(fitLDA, newdata = df[sources,7:11])
-ct <- table(as.character(oSources[sources]), as.character(testLDA$class))
+ct <- table(as.character(df$Source[sources]), as.character(testLDA$class))
 testAccuracy <- diag(prop.table(ct, 1))
-print(testAccuracy) # percent correct for each Source
 testAccuracyTotal <-sum(diag(prop.table(ct)))
-print(testAccuracyTotal) # total percent correct
+print("Discriminant source accuracy")
+print(testAccuracyTotal)
 
-# Predict source for artifacts and assign to obsidian data frame
+# Predict source for artifacts and assign to  dataframe
 predictLDA <- predict(fitLDA, newdata = df[,7:11])
 df$Discriminant <- as.character(predictLDA$class)
 df$Posterior <- round(apply(predictLDA$posterior, 1, function(x) max(x)),3)
 LDAPosterior <- cbind.data.frame(df[,1],df$Source,predictLDA$posterior)
 names(LDAPosterior)[1:2] <- c("ANID", "Source")
 
-
-
 #############################################################################################
 # Mahalanobis Distance
-
 # Calculate Mahalanobis distance from each source sample to each source group.
-oGroups <- unique(sort(df$Source[sources]))
+mGroups <- unique(sort(df$Source[sources]))
 
 # Source mean and covariance
 sourcesMdist <- NULL
-for(i in 1:length(oGroups)){
-  sMean <- colMeans(df[df$Source == oGroups[i],7:11])
-  sCov <- cov(df[df$Source == oGroups[i],7:11])
+for(i in 1:length(mGroups)){
+  sMean <- colMeans(df[df$Source == mGroups[i],7:11])
+  sCov <- cov(df[df$Source == mGroups[i],7:11])
   mDist <- mahalanobis(df[sources,7:11],sMean,sCov, tol = 1e-20)
   sourcesMdist <- cbind(sourcesMdist,mDist)
-  colnames(sourcesMdist)[i] <- oGroups[i]
+  colnames(sourcesMdist)[i] <- mGroups[i]
   }
 
 # assess accuracy of sourced data
@@ -67,19 +60,18 @@ sourcesMdistMin <- cbind.data.frame(df$Source[sources],
 colnames(sourcesMdistMin)[1:3] <- c("OriginalSource","ClosestSource", "MinimumDistance")
 mDistAccuracy <- sum(sourcesMdistMin$ClosestSource %in% sourcesMdistMin$OriginalSource)/
                   nrow(sourcesMdistMin)
+print("Mahalanobis source accuracy")
 print(mDistAccuracy) # should = 1
 
 # Determine source for all
-oGroups <- unique(sort(df$Source[sources]))
-
 # Source mean and covariance
 allMdist <- NULL
-for(i in 1:length(oGroups)){
-  sMean <- colMeans(df[df$Source == oGroups[i],7:11])
-  sCov <- cov(df[df$Source == oGroups[i],7:11])
+for(i in 1:length(mGroups)){
+  sMean <- colMeans(df[df$Source == mGroups[i],7:11])
+  sCov <- cov(df[df$Source == mGroups[i],7:11])
   mDist <- mahalanobis(df[,7:11],sMean,sCov, tol = 1e-20)
   allMdist <- cbind(allMdist,mDist)
-  colnames(allMdist)[i] <- oGroups[i]
+  colnames(allMdist)[i] <- mGroups[i]
 }
 
 # Obtain chi-squared probabilities
@@ -100,7 +92,7 @@ sNames <- colnames(allMdist) [apply(allMdist,1,which.min)]
 minDist <- round(apply(allMdist, 1, function(x) min(x)),3)
 maxProb <- round(apply(mProbs, 1, function(x) max(x)),3)
 
-# Assign Mahalanobis info to original data frame
+# Assign Mahalanobis info to original dataframe
 df$Mahalanobis <- sNames
 df$MahalDistance <- minDist
 df$MahalProb <- maxProb
@@ -110,49 +102,34 @@ df$MahalProb <- maxProb
 # artifacts.
 
 # Sourced
-artifactsConf <- which(df$MahalProb[artifacts] >= myProb
-                & df$Posterior[artifacts] >= myProb & df$Mahalanobis[artifacts] == df$Discriminant[artifacts])
+assigned <- which(df$MahalProb[artifacts] >= prob
+                & df$Posterior[artifacts] >= prob & df$Mahalanobis[artifacts] == df$Discriminant[artifacts])
 # Unsourced
-artifactsUnk <- setdiff(artifacts,artifactsConf)
-AllData <<- df
-Assigned <<- df[artifacts,][artifactsConf,]
-Unassigned <<- df[artifacts,][artifactsUnk,]
+unAssigned <- setdiff(artifacts,assigned)
+df$Status <- NA
+df$Status[assigned] <- "assigned"
+df$Status[unAssigned] <- "unassigned"
+df[,2:11] <- notlogged
 
 ################################################################################
 # Save results
-if(myResults == "Y"){
-  fileName <- gsub(".xlsx","",file2)
-  
-  write.xlsx(df[artifacts,],paste0(fileName," Analysis.xlsx"), 
-             sheetName = "All Artifacts",
+if(saveResults == T){
+  svDialogs::msgBox("Select name and directory to save results (as an xlsx file)")
+  fileName <- dlgSave()$res
+  write.xlsx(df,fileName, 
+             sheetName = "Results",
              row.names = F)
-  write.xlsx(LDAPosterior[artifacts,],paste0(fileName," Analysis.xlsx"),
+  write.xlsx(LDAPosterior[artifacts,],fileName,
              sheetName = "LDA Posterior Probabilities", row.names = F,
              append = T)
-  write.xlsx(allMdistC[artifacts,],paste0(fileName," Analysis.xlsx"),
+  write.xlsx(allMdistC[artifacts,],fileName,
              sheetName = "Mahalanobis distances", row.names = F,
              append = T)
-  if(!nrow(Assigned) == 0){
-    write.xlsx(Assigned,paste0(fileName," Analysis.xlsx"),
-               sheetName = "Assigned Artifacts", row.names = F,
-               append = T)
-  }
-  if(!nrow(Unassigned) == 0){
-    write.xlsx(Unassigned,paste0(fileName," Analysis.xlsx"),
-               sheetName = "Unassigned Artifacts", row.names = F,
-               append = T)
-  }
-}
+ }
 
 ################################################################################
-# Return results as list of dataframes
-# Assign correct data frame   
-if(whichData == 1) {results <- df}
-if(whichData == 2) {results <- rbind.data.frame(Assigned,
-                                               df[sources,])}
-if(whichData == 3) {results <- rbind.data.frame(Unassigned,
-                                               df[sources,])}
-
-return(results)
+# Return results
+df[,2:11] <- mLog
+return(df)
 }
 
