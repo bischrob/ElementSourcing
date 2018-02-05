@@ -9,15 +9,13 @@
 ################################################################################
 # Variables to update
 
+files <- choose.files(caption = "Select all files to use in sourcing")
 file1 <- file.choose() # note look into using choose.file for multiple selections
 file2 <- file.choose()
 
 myGroup <- "Source"
 myGroup2 <- "Type"
 myProb <- .9 # Probability limit to accept sourcing
-# grp1 <- c("American Falls", "Malad", "Browns Bench Sub A", "Browns Bench Sub B", "Toy Pass", "Big Southern Butte", "Ferguson Wash") # subset sources
-# grp1 <- unique(mySources$Source)
-# grp2 <- c("PRM") # subset groups to source
 whichData <- 1 # 1, 2 or 3 - designates the use of all data in plots, or assigned or unassigned
 elem1 <- 8
 elem2 <- 9
