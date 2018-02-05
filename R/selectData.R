@@ -21,6 +21,7 @@ selectData <- function(){
     names(df2)[1:13] <- c("ANID","Mn", "Fe", "Zn", "Ga", "Th", "Rb",
                           "Sr", "Y", "Zr", "Nb", "Source", "Type")
     # Choose which sources to keep
+    svDialogs::msgBox("Choose which sources to use")
     list1 <- unique(df1$Source) # unique sources
     list2 <- unique(df2$Source) # unique sources
     grp1 <- dlgList(list1, multiple = TRUE)$res
@@ -31,11 +32,18 @@ selectData <- function(){
                     df2[which(df2$Source %in% grp2),] ) 
   } else {
     # Choose which sources to keep
+    svDialogs::msgBox("Choose which sources to use")
     list1 <- unique(df1$Source) # unique sources
     grp1 <- dlgList(list1, multiple = TRUE)$res
     
     #subset data
     df <- df1[which(df1$Source %in% grp1),]
   }
+  if(! "Source" %in% df$Type){
+    stop("There are no sources. Ensure data contains a column with the label 'Source'.")
+  } 
+  if(! "Artifact" %in% df$Type){
+    stop("There are no artifacts. Ensure data contains a column with the label 'Artifact'.")
+  } 
   return(df)
 }
