@@ -8,7 +8,9 @@
 
 ################################################################################
 # Create a variable storing packages used, installs the package if missing, and loads packages.
-my.packages <- c("xlsx", "ggplot2","MASS", "dplyr", "rio","svDialogs", "plotly", "shiny")
+my.packages <- c("xlsx", "ggplot2","MASS", "dplyr",
+                 "rio","svDialogs", "plotly", "shiny",
+                 "webshot")
 usePackage <- function(p) 
 {
   if (!is.element(p, installed.packages()[,1]))
@@ -39,7 +41,10 @@ df <- elemSource(df,saveResults = F,prob = 1)
 ################################################################################
 # plot results
  allBiplots(df)
-# allTriplots(plotDF)
 # Display scatterplots
-# windows(12,12); sp <- scatterPlots(df)
+windows(12,12); sp <- scatterPlots(df)
+
+# View results interactively
+
+# shinyApp(ui, server)
 

@@ -15,10 +15,11 @@ allBiplots <- function(df,mColors, showSources = F){
     mColors <-  myColors$Hex[1:length(unique(df$Source))]
   }
   dName <- unlist(strsplit(as.character(Sys.time())," ")) # Gives directory today's date
-  dName <- paste0("Figures/Plots--", dName[1],"/Biplots")
+  dName <- paste0("Figures/Plots--", dName[1])
   if (dir.exists(dName) == F) dir.create(dName)
 
-  for(i in 7:11){
+  # run all plots
+    for(i in 7:11){
     for(j in i:11){
       if(!identical(i,j)){
         ratio.display <- 4/3
@@ -39,14 +40,14 @@ allBiplots <- function(df,mColors, showSources = F){
                                               color = df$Source[sources]),
               type = "norm",
               level = .9,
-              lwd = 1) # this ellipse is based off the multivariate normal distribution
+              lwd = .5) # this ellipse is based off the multivariate normal distribution
         if(showSources == T){
           g <- g + geom_point(data = df[sources,], aes(x = df[sources,i],
                                       y = df[sources,j],
                                       color = df$Source[sources],
                                       shape = df$Type[sources]))
         }
-         ggsave(filename = paste0(dName,names(df)[i], "-",names(df)[j],".jpg"), 
+         ggsave(filename = paste0(dName,"/",names(df)[i], "-",names(df)[j],".png"), 
               dpi = 300, plot = g, width = 6.5, units = "in")
     }}}
 }

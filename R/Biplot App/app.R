@@ -2,16 +2,12 @@
 # Created: 12.21.17
 # Robert J. Bischoff
 
-# #############################################################################################
-# # Create a variable storing packages used, installs the package if missing, and loads packages.
-# my.packages <- c("plotly", "shiny")
-# usePackage <- function(p) 
-# {
-#   if (!is.element(p, installed.packages()[,1]))
-#     install.packages(p, dep = TRUE)
-#   require(p, character.only = TRUE)
-# }
-# lapply(my.packages, usePackage)
+###############################################################################
+# Create variables for subsetting
+assigned <- which(df$Status == "assigned")
+unAssigned <- which(df$Status == "unassigned")
+artifacts <- which(df$Type == "Artifact")
+sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
 
 #############################################################################################
 # User interface ----
@@ -60,9 +56,9 @@ server <- function(input, output) {
   output$plotly1 <- renderPlotly({
     
     # Assign correct data frame for radio button selected    
-    if(input$source1 == 1) {plotDF <- AllData}
-    if(input$source1 == 2) {plotDF <- rbind.data.frame(Assigned, AllData[sources,])}
-    if(input$source1 == 3) {plotDF <- rbind.data.frame(Unassigned, AllData[sources,])}
+    if(input$source1 == 1) {plotDF <- df}
+    if(input$source1 == 2) {plotDF <- rbind.data.frame(df[assigned,],df[sources,])}
+    if(input$source1 == 3) {plotDF <- rbind.data.frame(df[unAssigned,],df[sources,])}
     plotS <- plotDF[sources,] 
     colS <- plotS[,as.character(input$label1)]
     shapeS <- plotS$Type
@@ -93,7 +89,7 @@ server <- function(input, output) {
                          color = colS),
                      type = "norm",
                      level = .9,
-                     lwd = .75) # this ellipse is based off the multivariate normal distribution
+                     lwd = .5) # this ellipse is based off the multivariate normal distribution
       ggplotly(g)
   })
 }

@@ -1,17 +1,14 @@
-# This script creates a shiny app for showing triplots for obsidian sourcing.
-# Created: 12.21.17
-# Robert J. Bischoff
+#' This script creates a shiny app for showing triplots for obsidian sourcing.
+#' Must run main script first
+#' Created: 12.21.17
+#' Robert J. Bischoff
 
-#############################################################################################
-# Create a variable storing packages used, installs the package if missing, and loads packages.
-my.packages <- c("plotly", "shiny")
-usePackage <- function(p) 
-{
-  if (!is.element(p, installed.packages()[,1]))
-    install.packages(p, dep = TRUE)
-  require(p, character.only = TRUE)
-}
-lapply(my.packages, usePackage)
+###############################################################################
+# Create variables for subsetting
+assigned <- which(df$Status == "assigned")
+unAssigned <- which(df$Status == "unassigned")
+artifacts <- which(df$Type == "Artifact")
+sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
 
 #############################################################################################
 # User interface ----
@@ -67,9 +64,9 @@ server <- function(input, output) {
   output$plotly1 <- renderPlotly({
     
     # Assign correct data frame for radio button selected    
-    if(input$source1 == 1) {plotDF <- AllData}
-    if(input$source1 == 2) {plotDF <- rbind.data.frame(Assigned, AllData[sources,])}
-    if(input$source1 == 3) {plotDF <- rbind.data.frame(Unassigned, AllData[sources,])}
+    if(input$source1 == 1) {plotDF <- df}
+    if(input$source1 == 2) {plotDF <- rbind.data.frame(df[assigned,],df[sources,])}
+    if(input$source1 == 3) {plotDF <- rbind.data.frame(df[unAssigned,],df[sources,])}
 
     plot_ly(data = plotDF,
                  a = plotDF[,as.numeric(input$elem1)],
@@ -87,7 +84,7 @@ server <- function(input, output) {
       layout(ternary = list(aaxis = list(title = names(plotDF)[as.numeric(input$elem1)]),
                             baxis = list(title = names(plotDF)[as.numeric(input$elem2)]),
                             caxis = list(title = names(plotDF)[as.numeric(input$elem3)]),
-                            margin = list(t = 50, l = 200)))
+                            margin = list(t = 500, l = 500, r = 500, bottom = 500, pad = 500)))
   })
 }
 
