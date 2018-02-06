@@ -4,15 +4,20 @@
 #' Created: 2.2.18
 #' Last Updated: 2.5.18
 #' Robert J. Bischoff
+#' Dependent packages: svDialogs, rio
 
 ################################################################################
 selectData <- function(){
+  options(warn = -1)
+  suppressMessages(library(rio))
+  suppressMessages(library(svDialogs))
+  options(warn = 0)
   # first have user select dataframes
   svDialogs::msgBox("Select up to two files to use in sourcing")
   files <- choose.files(caption = "Select Up to two files to use in sourcing")
   
   # load data
-  df1 <- import(files[1])
+  df1 <- rio::import(files[1])
   names(df1)[1:13] <- c("ANID","Mn", "Fe", "Zn", "Ga", "Th", "Rb",
                         "Sr", "Y", "Zr", "Nb", "Source", "Type")
   if(length(files) > 1){
@@ -34,7 +39,7 @@ selectData <- function(){
     # Choose which sources to keep
     svDialogs::msgBox("Choose which sources to use")
     list1 <- unique(df1$Source) # unique sources
-    grp1 <- dlgList(list1, multiple = TRUE)$res
+    grp1 <- svDialogs::dlgList(list1, multiple = TRUE)$res
     
     #subset data
     df <- df1[which(df1$Source %in% grp1),]

@@ -8,6 +8,7 @@
 #' Date Created: 2.2.2018
 #' Last Updated: 2.5.2018
 #' Contact: bischrob@gmail.com
+#' Dependent packages: ggplot2, grid, gridExtra
 
 ################################################################################
 # Function
@@ -22,15 +23,15 @@ scatterPlots <- function(df = "dataframe", groupName = NULL, mColors = NULL){
     myColors <- readRDS("Data/Colors.Rds")
     mColors <-  myColors$Hex[1:length(unique(df$Source))]
   } 
+  artifacts <- which(df$Type == "Artifact")
+  sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
   # load packages
   myPackages <- c("ggplot2", "grid","gridExtra")
-  usePackage <- function(p) 
-  {
-    if (!is.element(p, installed.packages()[,1]))
-      install.packages(p, dep = TRUE)
-    lapply(p, function(x) suppressMessages(require(x, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))
-  }
-  lapply(myPackages, usePackage)
+  options(warn = -1)
+  suppressMessages(library(ggplot2))
+  suppressMessages(library(grid))
+  suppressMessages(library(gridExtra))
+  options(warn = 0)
   
   # get all plots into a list
   # run all plots
@@ -42,7 +43,7 @@ scatterPlots <- function(df = "dataframe", groupName = NULL, mColors = NULL){
         i <- i
         j <- j
         if(!identical(i,j)){
-            (max(df[,j])-min(df[,j]))
+          (max(df[,j])-min(df[,j]))
           g <- ggplot() +
             geom_point(data = df[artifacts,], aes(x = df[artifacts,i],
                                                   y = df[artifacts,j],
@@ -63,7 +64,7 @@ scatterPlots <- function(df = "dataframe", groupName = NULL, mColors = NULL){
           k <<- k + 1
         }
       })
-
+  
   
   # create a function to create one shared plot
   grid_arrange_shared_legend <- function(plots) {
@@ -78,9 +79,7 @@ scatterPlots <- function(df = "dataframe", groupName = NULL, mColors = NULL){
       heights = unit.c(unit(1, "npc") - lheight, lheight))
   }
   g <- grid_arrange_shared_legend(mPlots)
-
-    return(g)
+  
+  return(g)
 }
 
-
-    

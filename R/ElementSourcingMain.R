@@ -8,43 +8,49 @@
 
 ################################################################################
 # Create a variable storing packages used, installs the package if missing, and loads packages.
-my.packages <- c("xlsx", "ggplot2","MASS", "dplyr",
-                 "rio","svDialogs", "plotly", "shiny",
-                 "webshot")
-usePackage <- function(p) 
+  my.packages <- c("xlsx", "ggplot2","MASS", "dplyr",
+                 "rio","svDialogs", "plotly", "shiny", "devtools")
+  usePackage <- function(p) 
 {
   if (!is.element(p, installed.packages()[,1]))
     install.packages(p, dep = TRUE)
-  lapply(p, function(x) suppressMessages(require(x, character.only = TRUE,quietly=TRUE,warn.conflicts = FALSE)))
 }
-lapply(my.packages, usePackage)
-
+  lapply(my.packages, usePackage)
+  if (!is.element("ggbiplot", installed.packages()[,1])) {
+    install_github("ggbiplot", "vqv")
+}
 # source functions
-source("R/scatterPlots.R")
-source("R/elemSource.R")
-source("R/selectData.R")
-source("R/AllBiplotsFunction.R")
-
+  source("R/selectData.R")
+  source("R/elemSource.R")
+  source("R/scatterPlots.R")
+  source("R/AllBiplotsFunction.R")
+  source("R/plotPCA.R")
+  source("R/runBiplotApp.R")
+  source("R/runTriplotApp.R")
 ################################################################################
 # load data
-# df <- selectData()
+  df <- selectData()
 # saveRDS(df,"Data/testdata.Rds")
-df <- readRDS('Data/testdata.Rds')
-
-# Create key for rows that are either artifacts or sources
-artifacts <- which(df$Type == "Artifact")
-sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
+# df <- readRDS('Data/testdata.Rds')
 
 # Run sourcing function
-df <- elemSource(df,saveResults = F,prob = 1)
+  df <- elemSource(df,saveResults = F,prob = 1)
 
 ################################################################################
 # plot results
- allBiplots(df)
 # Display scatterplots
-windows(12,12); sp <- scatterPlots(df)
+  windows(12,12) ; scatterPlots(df)
 
+# saves all possible versions of biplots
+ allBiplots(df, onlySources = F, showSources = T)
+
+# Plot PCA
+  plotPCA(df, showSources = T)
+ 
 # View results interactively
-
-# shinyApp(ui, server)
+# Biplot
+  runBiplotApp()
+  
+# Triplot
+  runTriplotApp()
 

@@ -2,8 +2,15 @@
 #' Must run main script first
 #' Created: 12.21.17
 #' Robert J. Bischoff
+#' Dependent pacakges: shiny, plotly, ggplot2
 
 ###############################################################################
+options(warn = -1)
+suppressMessages(library(shiny))
+suppressMessages(library(ggplot2))
+suppressMessages(library(plotly))
+options(warn = 0)
+
 # Create variables for subsetting
 assigned <- which(df$Status == "assigned")
 unAssigned <- which(df$Status == "unassigned")
@@ -12,7 +19,7 @@ sources <- c(which(df$Type == "Source"),which(df$Type == "Source Flake"))
 
 #############################################################################################
 # User interface ----
-ui <- fluidPage(
+uitri <- fluidPage(
   titlePanel("Obsidian Sourcing Interactive Plots"), 
       sidebarLayout(
         sidebarPanel(
@@ -57,7 +64,7 @@ ui <- fluidPage(
 )
 
 # Server logic ----
-server <- function(input, output) {
+servertri <- function(input, output) {
   
   output$caption <- renderText("Triplot/Ternary")
   
@@ -89,4 +96,4 @@ server <- function(input, output) {
 }
 
 # Run app ----
-shinyApp(ui, server)
+# shinyApp(uitri, servertri)
